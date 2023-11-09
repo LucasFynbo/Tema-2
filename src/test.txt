@@ -5,8 +5,3 @@ from gpiozero import LED
 from gpiozero import PWMLED
 from time import sleep
 import sys, termios, tty, os
-
-qwerty
-
-qwerty1
-hej
