@@ -9,3 +9,4 @@ import sys, termios, tty, os
 qwerty
 
 qwerty1
+hej
