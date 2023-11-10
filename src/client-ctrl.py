@@ -1,8 +1,12 @@
 import tkinter as tk
+import msgpack, socket
 import math
 
 class JoystickApp:
     def __init__(self, master):
+        self.saddr = '0.0.0.0'
+        self.sport = '0'
+
         self.master = master
         self.master.title("Min Fede Joystick App")
 
@@ -46,42 +50,18 @@ class JoystickApp:
     def tilbage_til_start(self, event):
         self.canvas.coords(self.joystick, 190, 190, 210, 210)
 
-    def update_coordinates(self):
+    def scoords(self):
+        csocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+        bmsg = str.encode(self.canvas.coords(self.joystick))
+        ssocket_addr = (self.saddr, self.sport) 
+        buffer_size: int = 1024
+
         print(self.canvas.coords(self.joystick))
-        self.master.after(100, self.update_coordinates)
+        self.master.after(50, self.update_coordinates)
+
+
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = JoystickApp(root)
     root.mainloop()
-
-
-
-import seocket
-import keyboard
-
-#dette er funktionen til at sende komandoer til roveren
-def send_com(command, host="roverens_ip", port = 7913):
-    
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #opretter TCP-socket
-    
-    client_socket.connect((host,port)) #opretter forbindelse til serverne (roveren)
-
-    client_socket.send(command.encode('utf-8')) #sender komandoer til roveren efter de er lavet til bytes :) 
-    
-    client_socket.close() # lukker forbindelsen
-
-#loppe der køre forevig til brugeren lukker programmet.
-while True:
-    if keyboard.is_pressed('w'):
-        send_styring('w')
-
-    elif keyboard.is_pressed('s'):
-        send_styring('s')
-    elif keyboard.is_pressed('a'):
-        send_styring('a')
-    elif keyboard.is_pressed('d'):
-        send_styring('d')
-    elif keyboard.is_pressed('q'):
-        send_styring('q')
-
