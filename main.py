@@ -15,13 +15,7 @@ class DrvHandler:
         self.dir_M1 = Pin(16, Pin.OUT)  # Backwards
         self.dir_M2 = Pin(13, Pin.OUT)  # Forwards
 
-<<<<<<< HEAD
-# ------------------------------
-#       UDP socket server
-# ------------------------------
-#           Insert
 
-def main():
 =======
         self.mspeed: int = 65535
         self.drv: bool = 0
@@ -37,29 +31,7 @@ def main():
             self.pwm1.duty_u16(self.mspeed)
             
 
-<<<<<<< HEAD
-    direction = "0"
-    # direction = w; kør fremad  
-    # direction = a; kør venstre
-    # direction = d; kør højre
-    # direction = s; kør bagud
-    match (direction):
-        case w:
-            # kør fremad
-            return
-        case a:
-            #kør venstre
-            return
-        case d:
-            #kør højre
-            return
-        case s:
-            #bak/brems
-            return
-        
-        
-if __name__ == "__main__":
-    main()
+
 
 =======
     def frwd(self) -> None:
