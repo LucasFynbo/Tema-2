@@ -28,10 +28,6 @@ class DrvHandler:
             self.pwm2.duty_u16(0)
             self.pwm1.duty_u16(self.mspeed)
             
-
-
-
-=======
     def frwd(self) -> None:
         self.pwm1.duty_u16(self.mspeed)
         self.pwm2.duty_u16(self.mspeed)

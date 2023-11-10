@@ -1,7 +1,0 @@
-test
-
-# Import of lib
-from gpiozero import LED
-from gpiozero import PWMLED
-from time import sleep
-import sys, termios, tty, os 123

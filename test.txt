@@ -1,1 +1,72 @@
-Commit Test
+Pygame joystick sin() / cos() logik.
+
+joysticket skal ses som en enhedscirkel.
+
+         , - ~ ~ ~ - ,
+     , '               ' ,
+   ,                       ,
+  ,                         ,
+ ,                           ,
+ ,             .              ,
+ ,                           ,
+  ,                         ,
+   ,                       ,
+     ,                  , '
+       ' - , _ _ _ ,  '
+
+
+Den er delt op i de her dele via sin()
+
+                +
+          , - ~ | ~ - ,         
+      , '       |        ' ,
+    ,           |            ,
+   ,            |             ,
+  ,             |              ,
+ -, --------------------------- , +
+  ,             |              ,
+   ,            |             ,
+    ,           |            ,
+      ,         |         , '    
+        ' - , _ | _ ,  '
+                -
+
+    Cos = x akse
+    Sin = y akse
+    
+    Vi skal bruge sin() og cos() værdierne som parametere for et if statement til at finde ud af positionen af vores joystick touch og dens actions.
+    Sin kigger på y aksen og beregner hvad vores target value er der og cos kigger på x aksen og finder vores target value der
+
+    Dette giver os et præcis værdi hvor vores target er.
+
+    Hvis vores target(A,B,C,D, E) er her:
+
+                + B
+          , - ~ | ~ - ,         
+      , '       |        ' ,
+    ,           |            ,
+   ,            |             ,
+C ,             |              ,
+ -, --------------------------- , +
+  ,             |   E          ,
+   ,            |             , D
+    ,           |            ,
+      ,         |         , '    
+        ' - , _ | _ ,  '
+             A  -
+    
+
+Target A pseudo kode:
+    sin() = højeste minus tal (Da den ikke kan gå længere ud på x aksen)
+    cos() = -0.1
+
+    if cos() > 0 and sin() < 0:
+        tag procenten af hvor høj vores sin() værdi og gang den med vores max speed 
+            (100% max speed, da sin() er så langt ud på y aksen som den kan.)
+        
+        tag vores cos() og spred vores max speed ud på vores 2 motorer (højre og venster motor).
+            (venste motor skal kun køre meget minimalt hurtigere end vores højre, da cos() kun er 0.1, dette kan også gøres ved at bruge procent mængde af vores variable (motor duty cycle / max speed).)
+
+Target B pseudo kode:
+    logikken er det samme som target A, men bare det omvente (Da sin er højeste plus (skal køre fremad) og cos er +0.1)
+
