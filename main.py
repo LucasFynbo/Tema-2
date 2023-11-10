@@ -19,7 +19,7 @@ class DrvHandler:
 =======
         self.mspeed: int = 65535
         self.drv: bool = 0
->>>>>>> 15caf97c0fc0c17eb7327d5ae2438853eee0b653
+
 
     def turner(self, direction: int = 2) -> None:
         # 0 - Left, 1 - Right, (DEFAULT) 2 - Placeholder
@@ -83,10 +83,10 @@ class InHandler:
 async def main():
     control_handler = DrvHandler()
     input_handler = InHandler()
-    await asyncio.gather(
+    await asyncio.gather(   
         input_handler.getctrl(control_handler),
     )
 
 if __name__ == "__main__":
     asyncio.run(main())
->>>>>>> 15caf97c0fc0c17eb7327d5ae2438853eee0b653
+
