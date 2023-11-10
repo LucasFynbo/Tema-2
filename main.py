@@ -49,7 +49,7 @@ class DrvHandler:
 
 class InHandler:
     def __init__(self) -> None:
-        self.key = ''
+        self.key: str = ''
 
     async def getctrl(self, control_handler: DrvHandler) -> None:
         poller = select.poll()
