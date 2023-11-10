@@ -1,4 +1,4 @@
-from machine import Pin, pwd
+from machine import Pin, PWM
 from time import sleep
 import numpy as np #styring af bit. (Resource Management)
 import msgpack as mp #binær overførelse af data i stedet for json.
@@ -9,16 +9,17 @@ pwm2 = PWM(Pin(15, Pin.OUT), freq=200, duty_ns= 0)
 dir_M1 = Pin(16, Pin.OUT)
 dir_M2 = Pin(13, Pin.OUT)
 
-------------------------------
-UDP socket server
-------------------------------
-Insert
+# ------------------------------
+#       UDP socket server
+# ------------------------------
+#           Insert
+
 def main():
 
     # Control loop
 
-    direction = "w"
-    # direction = w; kør fremad
+    direction = "0"
+    # direction = w; kør fremad  
     # direction = a; kør venstre
     # direction = d; kør højre
     # direction = s; kør bagud
@@ -35,7 +36,8 @@ def main():
         case s:
             #bak/brems
             return
-
-
-if name == "main":
+        
+        
+if __name__ == "__main__":
     main()
+
