@@ -84,20 +84,30 @@ class JoystickApp:
         
 
 class UDPSocket:
-    def __init__(self):
-        saddr = '0.0.0.0'
-        sport = '0'
-        csocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-        ssocket_addr = (saddr, sport) 
-        buffer_size: int = 1024
+    def __init__(self, joystick_app_instance):
+        #Intialize the UDP socket
+        self.joystick_app = joystick_app_instance
+        self.saddr = '000.0.0.0' #indsæt IP adresse her!
+        self.sport = 7913 #indsæt hvilken port der bliver brugt!
+        self.csocket = socket.socket(famuly=socket.AF.INET, type=socket.SOCK_DGRAM)
+        self.ssocket_addr = (self.saddr, self.sport) 
+        self.buffer_size: int = 1024
 
+    def send_data(self):
+        #forbereder data der skal sendes over UDP
         data = {
-            'coordinates': math.floor(JoystickApp.coords())
-            
+            'coordinates': self.joystick_app.coords()
         }
-
-
+        packed_data = msgpack.packb(data)#pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
+        self.csocket.sendto(packed_data, self.ssocket_addr)#sender pakken af data via UDP
 if __name__ == "__main__":
     root = tk.Tk()
     app = JoystickApp(root)
-    root.mainloop()
+    
+
+    def update_udp():
+        udp_socket.send_data()#periode vis sender kordinater fra joystik over UDP
+        root.after(50, update_udp)#planlægger næste opdatering af data til 50 millisekunder
+    
+    root.after(50, update_udp) #starter opdateringen
+    root.mainloop() #starter Tkinter main loop
