@@ -2,56 +2,116 @@ import tkinter as tk
 import msgpack, socket
 import math
 
-class JoystickApp:
+data = {}
+x_value = 0
+y_value = 0
+
+class Joystick:
     def __init__(self, master):
         self.master = master
         self.master.title("Joystick")
 
-        self.canvas = tk.Canvas(self.master, width=400, height=400, bg="black")
+        self.canvas = tk.Canvas(self.master, width=400, height=400, bg="white")
         self.canvas.pack()
-        
-        self.cirkel = self.canvas.create_oval(350, 350, 50, 50, fill="white")
 
-        self.joystick = self.canvas.create_oval(190, 190, 210, 210, fill="red")
+        self.radius = 150
+        self.center_x = 200
+        self.center_y = 200
 
-        self.canvas.create_text(100, 300, text="Venstre, Ned", font=("Helvetica", 12))
-        self.canvas.create_text(100, 100, text="Venstre, Op", font=("Helvetica", 12))
-        self.canvas.create_text(300, 300, text="Højre, Ned", font=("Helvetica", 12))
-        self.canvas.create_text(300, 100, text="Højre, Op", font=("Helvetica", 12))
-        self.canvas.create_text(200, 50, text="Op", font=("Helvetica", 12))
-        self.canvas.create_text(350, 200, text="Højre", font=("Helvetica", 12))
-        self.canvas.create_text(200, 350, text="Ned", font=("Helvetica", 12))
-        self.canvas.create_text(50, 200, text="Venstre", font=("Helvetica", 12))
+        # Draw the bounding box (circle)
+        self.canvas.create_oval(
+            self.center_x - self.radius,
+            self.center_y - self.radius,
+            self.center_x + self.radius,
+            self.center_y + self.radius,
+            outline="black"
+        )
 
-        self.canvas.bind("<B1-Motion>", self.move_joystick)
-        self.canvas.bind("<ButtonRelease-1>", self.tilbage_til_start)
+        # Draw lines from center to each corner (you can remove these as needed)
+        self.canvas.create_line(self.center_x, self.center_y, self.center_x - self.radius, self.center_y - self.radius, fill="black")
+        self.canvas.create_line(self.center_x, self.center_y, self.center_x + self.radius, self.center_y - self.radius, fill="black")
+        self.canvas.create_line(self.center_x, self.center_y, self.center_x - self.radius, self.center_y + self.radius, fill="black")
+        self.canvas.create_line(self.center_x, self.center_y, self.center_x + self.radius, self.center_y + self.radius, fill="black")
 
-        self.coords()
+        # Draw the coordinate system inside the circle
+        self.canvas.create_line(self.center_x, self.center_y - self.radius, self.center_x, self.center_y + self.radius, fill="black")  # Vertical line (Y-axis)
+        self.canvas.create_line(self.center_x - self.radius, self.center_y, self.center_x + self.radius, self.center_y, fill="black")  # Horizontal line (X-axis)
 
-    def move_joystick(self, event):
+        # Draw markers for reference (you can remove these as needed)
+        # Middle marker
+        self.draw_marker(self.center_x, self.center_y, "Middle")
 
-        cirkel_midtpunkt = [(350 + 50) / 2, (350 + 50) / 2]
-        joystick_midtpunkt = [(190 + 210) / 2, (190 + 210) / 2]
-        distance = math.sqrt((event.x - cirkel_midtpunkt[0]) ** 2 + (event.y - cirkel_midtpunkt[1]) ** 2)
+        # Corner markers
+        self.draw_marker(self.center_x - self.radius, self.center_y - self.radius, "Top Left")
+        self.draw_marker(self.center_x + self.radius, self.center_y - self.radius, "Top Right")
+        self.draw_marker(self.center_x - self.radius, self.center_y + self.radius, "Bottom Left")
+        self.draw_marker(self.center_x + self.radius, self.center_y + self.radius, "Bottom Right")
 
-        if distance <= (350 - 50) / 2:
-            x = event.x
-            y = event.y
-            x = max(10, min(390, x))
-            y = max(10, min(390, y))
-            self.canvas.coords(self.joystick, x - 10, y - 10, x + 10, y + 10)
+        # Side markers
+        self.draw_marker(self.center_x, self.center_y - self.radius, "Top")
+        self.draw_marker(self.center_x, self.center_y + self.radius, "Bottom")
+        self.draw_marker(self.center_x - self.radius, self.center_y, "Left")
+        self.draw_marker(self.center_x + self.radius, self.center_y, "Right")
 
-    def tilbage_til_start(self, event):
-        self.canvas.coords(self.joystick, 190, 190, 210, 210)
+        # Draw the marker
+        self.marker_size = 10
+        self.marker = self.canvas.create_oval(
+            self.center_x - self.marker_size // 2,
+            self.center_y - self.marker_size // 2,
+            self.center_x + self.marker_size // 2,
+            self.center_y + self.marker_size // 2,
+            fill="red"
+        )
 
-    def coords(self):
-        # bmsg = str.encode(self.canvas.coords(self.joystick))
-        print(self.canvas.coords(self.joystick))
-        self.master.after(50, self.coords)
+        # Bind mouse events
+        self.canvas.bind("<B1-Motion>", self.move_marker)
 
-        return self.canvas.coords(self.joystick)
+    def draw_marker(self, x, y, label):
+        # Draw a marker at the specified position with a label
+        marker_size = 5
+        self.canvas.create_oval(
+            x - marker_size,
+            y - marker_size,
+            x + marker_size,
+            y + marker_size,
+            fill="blue"
+        )
+        self.canvas.create_text(x, y - marker_size - 10, text=label, fill="blue")
 
-    def calcfunc(self):
+    def move_marker(self, event):
+        global x_value, y_value
+        # Calculate the new position based on mouse coordinates
+        new_x = event.x
+        new_y = event.y
+
+        # Calculate the angle and distance even when clicked outside the circle
+        angle = math.atan2(new_y - self.center_y, new_x - self.center_x)
+        distance = min(self.radius, math.sqrt((new_x - self.center_x)**2 + (new_y - self.center_y)**2))
+
+        # Calculate new coordinates
+        new_x = self.center_x + distance * math.cos(angle)
+        new_y = self.center_y + distance * math.sin(angle)
+
+        # Update the marker position
+        self.canvas.coords(
+            self.marker,
+            new_x - self.marker_size // 2,
+            new_y - self.marker_size // 2,
+            new_x + self.marker_size // 2,
+            new_y + self.marker_size // 2
+        )
+
+        # Print the polar coordinates
+        polar_radius = math.sqrt((new_x - self.center_x)**2 + (new_y - self.center_y)**2)
+        polar_angle = math.degrees(math.atan2(new_y - self.center_y, new_x - self.center_x))
+        print(f"Marker position: ({polar_radius:.2f}, {polar_angle:.2f} degrees)")
+        x_value = math.floor(polar_radius)
+        y_value = math.floor(polar_angle)
+        calc = Calc()
+        calc.calculate()
+
+class Calc:
+    def __init__(self):
         """
         Reference -
             Speed -
@@ -67,46 +127,85 @@ class JoystickApp:
                 Bottom-left: 100, 300
                 Bottom-right: 300, 300
         """
-        coords = self.canvas.coords(self.joystick)
 
-        # Calculate speed (how far user is up/down)
-        speed_factor = 327
-        speed = (self.canvas.coords(self.joystick)[1]-50)/1 # hvis 1 er = 1grad
-        speed = max(0, speed) # der kan ikke køres i negativ (kan nok ikke køre baglæns)
-        speed_value = int(speed * speed_factor)
+        self.X: int = x_value
+        self.Y: int = y_value
+
+    def calculate(self):
+        speed_factor: int = 436 # (436 = 65535 (mspeed) / 150 (max x value))      
+        self.uspeed: int = 0
+        for i in range(self.X):
+            self.uspeed += speed_factor
+
+        self.checkdir = -1 # 0 for forwards, 1 for backwards
+
+        self.lm_speed = self.uspeed
+        self.rm_speed = self.uspeed
         
-        uspeed: int = 0
-        for counter in range(coords[0]):
-            uspeed += 327
-            counter += 1    # Maybe not needed
+        if self.Y <= 0: # Forwards (if Y is negative)
+            self.checkdir = 0
             
-        # Calculate turn (how far user is in/out)
+            if self.Y < -90: # Top Left
+                print("Top Left")
+                self.lm_speed = max(0, int(self.uspeed * (1 - abs(self.Y + 90) / 90)))
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+            
+            elif self.Y > -90: # Top Right
+                print("Top Right")
+                self.rm_speed = max(0, int(self.uspeed * (1 - abs(self.Y + 90) / 90)))
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+            else:
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
         
+        elif self.Y > 0: # Backwards (if Y is positive)
+            self.checkdir = 1
+            # bottom left square
+            if self.Y > 90:
+                print("Bottom Left")
+                self.rm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+            # bottom right square
+            elif self.Y < 90: 
+                print("Bottom Right")
+                self.lm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+            else: 
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+        
+        self.craft_data()
 
-class UDPSocket:
-    def __init__(self, joystick_app_instance):
+    def craft_data(self):
+        global data
+         # craft data from calculations.
+        data = {
+            'check.direction': self.checkdir,
+            'lm': self.lm_speed,
+            'rm': self.rm_speed,
+        }
+
+class UdpSocket:
+    def __init__(self):
         #Intialize the UDP socket
-        self.joystick_app = joystick_app_instance
-        self.saddr = '000.0.0.0' #indsæt IP adresse her!
-        self.sport = 7913 #indsæt hvilken port der bliver brugt!
-        self.csocket = socket.socket(famuly=socket.AF.INET, type=socket.SOCK_DGRAM)
-        self.ssocket_addr = (self.saddr, self.sport) 
+        self.csocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        self.saddr = '000.0.0.0' # indsæt IP adresse her!
+        self.sport = 7913 # indsæt hvilken port der bliver brugt!
+        self.ssocket_addr = (self.saddr, self.sport) # henter oplysningerne fra self.addr(ip) og self.sport(port)
         self.buffer_size: int = 1024
 
     def send_data(self):
+        global data
         #forbereder data der skal sendes over UDP
-        data = {
-            'coordinates': self.joystick_app.coords()
-        }
-        packed_data = msgpack.packb(data)#pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
-        self.csocket.sendto(packed_data, self.ssocket_addr)#sender pakken af data via UDP
+        packed_data = msgpack.packb(data) # pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
+        self.csocket.sendto(packed_data, self.ssocket_addr) # sender pakken af data via UDP
+
 if __name__ == "__main__":
+    csocket = UdpSocket()
     root = tk.Tk()
-    app = JoystickApp(root)
-    
+    app = Joystick(root)
 
     def update_udp():
-        udp_socket.send_data()#periode vis sender kordinater fra joystik over UDP
+        csocket.send_data()#periode vis sender kordinater fra joystik over UDP
         root.after(50, update_udp)#planlægger næste opdatering af data til 50 millisekunder
     
     root.after(50, update_udp) #starter opdateringen

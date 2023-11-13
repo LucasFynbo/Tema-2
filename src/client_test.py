@@ -1,10 +1,12 @@
 import tkinter as tk
-import math
+import math, msgpack
 
-class CircleApp:
+data = {}
+
+class Joystick:
     def __init__(self, master):
         self.master = master
-        self.master.title("Circle App")
+        self.master.title("Joystick")
 
         self.canvas = tk.Canvas(self.master, width=400, height=400, bg="white")
         self.canvas.pack()
@@ -74,6 +76,7 @@ class CircleApp:
         self.canvas.create_text(x, y - marker_size - 10, text=label, fill="blue")
 
     def move_marker(self, event):
+        global data
         # Calculate the new position based on mouse coordinates
         new_x = event.x
         new_y = event.y
@@ -99,8 +102,47 @@ class CircleApp:
         polar_radius = math.sqrt((new_x - self.center_x)**2 + (new_y - self.center_y)**2)
         polar_angle = math.degrees(math.atan2(new_y - self.center_y, new_x - self.center_x))
         print(f"Marker position: ({polar_radius:.2f}, {polar_angle:.2f} degrees)")
+        self.X: int = math.floor(polar_radius)
+        self.Y: int = math.floor(polar_angle)
+
+        data = {
+            'xval': self.X,
+            'yval': self.Y
+        }
+        
+
+class DgramSocket:
+    def __init__(self):
+        #Intialize the UDP socket
+        self.joystick_app = joystick_app_instance
+        self.saddr = '000.0.0.0' #indsæt IP adresse her!
+        self.sport = 7913 #indsæt hvilken port der bliver brugt!
+        self.csocket = socket.socket(family=socket.AF.INET, type=socket.SOCK_DGRAM)
+        self.ssocket_addr = (self.saddr, self.sport) 
+        self.buffer_size: int = 1024
+    
+    def send_data(self):
+        #forbereder data der skal sendes over UDP
+        data = {
+            'coordinates': self.joystick_app.coords()
+        }
+        packed_data = msgpack.packb(data)#pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
+        self.csocket.sendto(packed_data, self.ssocket_addr)#sender pakken af data via UDP
+
+    def __init__(self, joystick_app_instance):
+
+
+    def send_data(self):
+        #forbereder data der skal sendes over UDP
+        data = {
+            'coordinates': self.joystick_app.coords()
+        }
+        packed_data = msgpack.packb(data)#pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
+        self.csocket.sendto(packed_data, self.ssocket_addr)#sender pakken af data via UDP
+
+
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = CircleApp(root)
+    app = Joystick(root)
     root.mainloop()
