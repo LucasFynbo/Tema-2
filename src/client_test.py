@@ -1,7 +1,10 @@
 import tkinter as tk
-import math, msgpack
+import msgpack, socket
+import math
 
 data = {}
+x_value = 0
+y_value = 0
 
 class Joystick:
     def __init__(self, master):
@@ -76,7 +79,7 @@ class Joystick:
         self.canvas.create_text(x, y - marker_size - 10, text=label, fill="blue")
 
     def move_marker(self, event):
-        global data
+        global x_value, y_value
         # Calculate the new position based on mouse coordinates
         new_x = event.x
         new_y = event.y
@@ -102,47 +105,109 @@ class Joystick:
         polar_radius = math.sqrt((new_x - self.center_x)**2 + (new_y - self.center_y)**2)
         polar_angle = math.degrees(math.atan2(new_y - self.center_y, new_x - self.center_x))
         print(f"Marker position: ({polar_radius:.2f}, {polar_angle:.2f} degrees)")
-        self.X: int = math.floor(polar_radius)
-        self.Y: int = math.floor(polar_angle)
+        x_value = math.floor(polar_radius)
+        y_value = math.floor(polar_angle)
+        calc = Calc()
+        calc.calculate()
 
-        data = {
-            'xval': self.X,
-            'yval': self.Y
-        }
+class Calc:
+    def __init__(self):
+        """
+        Reference -
+            Speed -
+                UP: 200, 50
+                DOWN: 200, 350
+
+            Turn -
+                Left: 50, 200
+                Right: 350, 200
+
+                Top-left: 100, 100
+                Top-right: 300, 100
+                Bottom-left: 100, 300
+                Bottom-right: 300, 300
+        """
+
+        self.X: int = x_value
+        self.Y: int = y_value
+
+    def calculate(self):
+        speed_factor: int = 436      # (436 = 65535 (mspeed) / 150 (max x value))      
+        self.uspeed: int = 0
+        for counter in range(self.X):
+            self.uspeed += speed_factor
+            counter += 1    # Maybe not needed
+
+        # 0 for forwards, 1 for backwards
+        self.checkdir = -1
+        self.lm_speed = self.uspeed
+        self.rm_speed = self.uspeed
+        # Forwards (if Y is negative)
+        if self.Y <= 0:
+            self.checkdir = 0
+            # top left square
+            if self.Y < -90:
+                print("Top Left")
+                self.lm_speed = max(0, int(self.uspeed * (1 - abs(self.Y + 90) / 90)))
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+            # top right square
+            elif self.Y > -90:
+                print("Top Right")
+                self.rm_speed = max(0, int(self.uspeed * (1 - abs(self.Y + 90) / 90)))
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+            else:
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
         
+        # Backwards (if Y is positive)
+        elif self.Y > 0:
+            self.checkdir = 1
+            # bottom left square
+            if self.Y > 90:
+                print("Bottom Left")
+                self.rm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+            # bottom right square
+            elif self.Y < 90: 
+                print("Bottom Right")
+                self.lm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+            else: 
+                print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
+        
+        self.craft_data
 
-class DgramSocket:
+    def craft_data(self):
+        global data
+         # craft data from calculations.
+        data = {
+            'check.direction': self.checkdir,
+            'lm': self.lm_speed,
+            'rm': self.rm_speed,
+        }
+
+class USocket:
     def __init__(self):
         #Intialize the UDP socket
-        self.joystick_app = joystick_app_instance
+        self.csocket = socket.socket(family=socket.AF.INET, type=socket.SOCK_DGRAM)
+
         self.saddr = '000.0.0.0' #indsæt IP adresse her!
         self.sport = 7913 #indsæt hvilken port der bliver brugt!
-        self.csocket = socket.socket(family=socket.AF.INET, type=socket.SOCK_DGRAM)
-        self.ssocket_addr = (self.saddr, self.sport) 
+        self.ssocket_addr = (self.saddr, self.sport) #henter oplysningerne fra self.addr(ip) og self.sport(port)
         self.buffer_size: int = 1024
-    
-    def send_data(self):
-        #forbereder data der skal sendes over UDP
-        data = {
-            'coordinates': self.joystick_app.coords()
-        }
-        packed_data = msgpack.packb(data)#pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
-        self.csocket.sendto(packed_data, self.ssocket_addr)#sender pakken af data via UDP
-
-    def __init__(self, joystick_app_instance):
-
 
     def send_data(self):
+        global data
         #forbereder data der skal sendes over UDP
-        data = {
-            'coordinates': self.joystick_app.coords()
-        }
         packed_data = msgpack.packb(data)#pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
         self.csocket.sendto(packed_data, self.ssocket_addr)#sender pakken af data via UDP
-
-
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = Joystick(root)
-    root.mainloop()
+
+    def update_udp():
+        USocket.send_data(None)#periode vis sender kordinater fra joystik over UDP
+        root.after(50, update_udp)#planlægger næste opdatering af data til 50 millisekunder
+    
+    root.after(50, update_udp) #starter opdateringen
+    root.mainloop() #starter Tkinter main loop"

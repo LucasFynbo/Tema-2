@@ -159,13 +159,13 @@ class Calc:
         
         elif self.Y > 0: # Backwards (if Y is positive)
             self.checkdir = 1
-            # bottom left square
-            if self.Y > 90:
+            
+            if self.Y > 90: # Bottom Left
                 print("Bottom Left")
                 self.rm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
                 print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
-            # bottom right square
-            elif self.Y < 90: 
+            
+            elif self.Y < 90: # Bottom Right
                 print("Bottom Right")
                 self.lm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
                 print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
