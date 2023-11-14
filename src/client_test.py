@@ -190,16 +190,16 @@ class USocket:
         #Intialize the UDP socket
         self.csocket = socket.socket(family=socket.AF.INET, type=socket.SOCK_DGRAM)
 
-        self.saddr = '000.0.0.0' #indsæt IP adresse her!
-        self.sport = 7913 #indsæt hvilken port der bliver brugt!
-        self.ssocket_addr = (self.saddr, self.sport) #henter oplysningerne fra self.addr(ip) og self.sport(port)
+        self.saddr = '10.42.0.1' # indsæt IP adresse her!
+        self.sport = 7913 # indsæt hvilken port der bliver brugt!
+        self.ssocket_addr = (self.saddr, self.sport) # henter oplysningerne fra self.addr(ip) og self.sport(port)
         self.buffer_size: int = 1024
 
     def send_data(self):
         global data
-        #forbereder data der skal sendes over UDP
-        packed_data = msgpack.packb(data)#pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
-        self.csocket.sendto(packed_data, self.ssocket_addr)#sender pakken af data via UDP
+        # forbereder data der skal sendes over UDP
+        packed_data = msgpack.packb(data) # pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
+        self.csocket.sendto(packed_data, self.ssocket_addr) # sender pakken af data via UDP
 
 if __name__ == "__main__":
     root = tk.Tk()

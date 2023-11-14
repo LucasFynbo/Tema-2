@@ -1,7 +1,8 @@
 import tkinter as tk
-import msgpack, socket
+import socket
 import math
-
+import json
+ 
 data = {}
 x_value = 0
 y_value = 0
@@ -132,7 +133,7 @@ class Calc:
         self.Y: int = y_value
 
     def calculate(self):
-        speed_factor: int = 436 # (436 = 65535 (mspeed) / 150 (max x value))      
+        speed_factor: int = 436 # (2 x 436 = 65535 (mspeed) / 150 (max x value))      
         self.uspeed: int = 0
         for i in range(self.X):
             self.uspeed += speed_factor
@@ -188,7 +189,7 @@ class UdpSocket:
         #Intialize the UDP socket
         self.csocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        self.saddr = '000.0.0.0' # indsæt IP adresse her!
+        self.saddr = '10.42.0.139' # indsæt IP adresse her!
         self.sport = 7913 # indsæt hvilken port der bliver brugt!
         self.ssocket_addr = (self.saddr, self.sport) # henter oplysningerne fra self.addr(ip) og self.sport(port)
         self.buffer_size: int = 1024
@@ -196,8 +197,8 @@ class UdpSocket:
     def send_data(self):
         global data
         #forbereder data der skal sendes over UDP
-        packed_data = msgpack.packb(data) # pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
-        self.csocket.sendto(packed_data, self.ssocket_addr) # sender pakken af data via UDP
+        packed_data = json.dumps(data) # pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
+        self.csocket.sendto(packed_data.encode('utf-8'), self.ssocket_addr) # sender pakken af data via UDP
 
 if __name__ == "__main__":
     csocket = UdpSocket()
