@@ -12,12 +12,12 @@ class Joystick:
         self.master = master
         self.master.title("Joystick")
 
-        self.canvas = tk.Canvas(self.master, width=400, height=400, bg="white")
+        self.canvas = tk.Canvas(self.master, width=1200, height=1200, bg="white")
         self.canvas.pack()
 
-        self.radius = 150
-        self.center_x = 200
-        self.center_y = 200
+        self.radius = 450
+        self.center_x = 600
+        self.center_y = 600
 
         # Draw the bounding box (circle)
         self.canvas.create_oval(
@@ -28,34 +28,12 @@ class Joystick:
             outline="black"
         )
 
-        # Draw lines from center to each corner (you can remove these as needed)
-        self.canvas.create_line(self.center_x, self.center_y, self.center_x - self.radius, self.center_y - self.radius, fill="black")
-        self.canvas.create_line(self.center_x, self.center_y, self.center_x + self.radius, self.center_y - self.radius, fill="black")
-        self.canvas.create_line(self.center_x, self.center_y, self.center_x - self.radius, self.center_y + self.radius, fill="black")
-        self.canvas.create_line(self.center_x, self.center_y, self.center_x + self.radius, self.center_y + self.radius, fill="black")
-
         # Draw the coordinate system inside the circle
         self.canvas.create_line(self.center_x, self.center_y - self.radius, self.center_x, self.center_y + self.radius, fill="black")  # Vertical line (Y-axis)
         self.canvas.create_line(self.center_x - self.radius, self.center_y, self.center_x + self.radius, self.center_y, fill="black")  # Horizontal line (X-axis)
 
-        # Draw markers for reference (you can remove these as needed)
-        # Middle marker
-        self.draw_marker(self.center_x, self.center_y, "Middle")
-
-        # Corner markers
-        self.draw_marker(self.center_x - self.radius, self.center_y - self.radius, "Top Left")
-        self.draw_marker(self.center_x + self.radius, self.center_y - self.radius, "Top Right")
-        self.draw_marker(self.center_x - self.radius, self.center_y + self.radius, "Bottom Left")
-        self.draw_marker(self.center_x + self.radius, self.center_y + self.radius, "Bottom Right")
-
-        # Side markers
-        self.draw_marker(self.center_x, self.center_y - self.radius, "Top")
-        self.draw_marker(self.center_x, self.center_y + self.radius, "Bottom")
-        self.draw_marker(self.center_x - self.radius, self.center_y, "Left")
-        self.draw_marker(self.center_x + self.radius, self.center_y, "Right")
-
         # Draw the marker
-        self.marker_size = 10
+        self.marker_size = 30
         self.marker = self.canvas.create_oval(
             self.center_x - self.marker_size // 2,
             self.center_y - self.marker_size // 2,
@@ -66,10 +44,11 @@ class Joystick:
 
         # Bind mouse events
         self.canvas.bind("<B1-Motion>", self.move_marker)
+        self.canvas.bind("<ButtonRelease-1>", self.release)
 
     def draw_marker(self, x, y, label):
         # Draw a marker at the specified position with a label
-        marker_size = 5
+        marker_size = 15
         self.canvas.create_oval(
             x - marker_size,
             y - marker_size,
@@ -78,6 +57,30 @@ class Joystick:
             fill="blue"
         )
         self.canvas.create_text(x, y - marker_size - 10, text=label, fill="blue")
+
+    def release(self, event):
+        global x_value, y_value
+        rel_x = event.x
+        rel_y = event.y
+
+        rel_x = self.center_x 
+        rel_y = self.center_y
+
+        self.canvas.coords(
+            self.marker,
+            rel_x - self.marker_size // 2,
+            rel_y - self.marker_size // 2,
+            rel_x + self.marker_size // 2,
+            rel_y + self.marker_size // 2
+        )
+
+        self.polar_radius = math.sqrt((rel_x - self.center_x)**2 + (rel_y - self.center_y)**2)
+        self.polar_angle = math.degrees(math.atan2(rel_y - self.center_y, rel_x - self.center_x))
+        print(f"Marker position: ({self.polar_radius:.2f}, {self.polar_angle:.2f} degrees)")
+        x_value = math.floor(self.polar_radius)
+        y_value = math.floor(self.polar_angle)
+        calc = Calc()
+        calc.calculate()
 
     def move_marker(self, event):
         global x_value, y_value
@@ -103,11 +106,11 @@ class Joystick:
         )
 
         # Print the polar coordinates
-        polar_radius = math.sqrt((new_x - self.center_x)**2 + (new_y - self.center_y)**2)
-        polar_angle = math.degrees(math.atan2(new_y - self.center_y, new_x - self.center_x))
-        print(f"Marker position: ({polar_radius:.2f}, {polar_angle:.2f} degrees)")
-        x_value = math.floor(polar_radius)
-        y_value = math.floor(polar_angle)
+        self.polar_radius = math.sqrt((new_x - self.center_x)**2 + (new_y - self.center_y)**2)
+        self.polar_angle = math.degrees(math.atan2(new_y - self.center_y, new_x - self.center_x))
+        print(f"Marker position: ({self.polar_radius:.2f}, {self.polar_angle:.2f} degrees)")
+        x_value = math.floor(self.polar_radius)
+        y_value = math.floor(self.polar_angle)
         calc = Calc()
         calc.calculate()
 
@@ -133,7 +136,7 @@ class Calc:
         self.Y: int = y_value
 
     def calculate(self):
-        speed_factor: int = 436 # (2 x 436 = 65535 (mspeed) / 150 (max x value))      
+        speed_factor: int = 145 # (2 x 436 = 65535 (mspeed) / 150 (max x value))      
         self.uspeed: int = 0
         for i in range(self.X):
             self.uspeed += speed_factor
@@ -163,12 +166,12 @@ class Calc:
             
             if self.Y > 90: # Bottom Left
                 print("Bottom Left")
-                self.rm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
+                self.lm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
                 print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
             
             elif self.Y < 90: # Bottom Right
                 print("Bottom Right")
-                self.lm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
+                self.rm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
                 print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
             else: 
                 print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
