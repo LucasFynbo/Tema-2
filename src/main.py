@@ -16,7 +16,7 @@ class DrvHandler:
         self.drv: bool = 0
 
     def control_drv(self, duty_lm: int = 0, duty_rm: int = 0, direction: bool = -1):
-        # Forwards
+        # driving Forwards
         if direction == 0 and duty_lm <= self.mspeed and duty_rm <= self.mspeed:
             self.dir_M1.value(self.drv)     # 0 (False) / Backwards
             self.dir_M2.value(not self.drv) # 1 (True) / Forwards
@@ -24,7 +24,7 @@ class DrvHandler:
             self.pwm1.duty_u16(duty_lm)
             self.pwm2.duty_u16(duty_rm)
             
-        # Backwards
+        # driving Backwards
         elif direction and duty_lm <= self.mspeed and duty_rm <= self.mspeed:
             self.dir_M1.value(not self.drv) # 1 (True) / Backwards
             self.dir_M2.value(self.drv)     # 0 (False) / Forwards
