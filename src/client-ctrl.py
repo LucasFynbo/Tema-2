@@ -3,23 +3,30 @@ import socket
 import math
 import json
  
-data = {}
-x_value = 0
-y_value = 0
 
+# Initialser globale variabler.
+data = {}   # Vores data vi sender i vores UDP Packet.
+x_value = 0 # Marker position på x aksen.
+y_value = 0 # Marker position på y aksen.
+
+# Joystick GUI app, main class
 class Joystick:
     def __init__(self, master):
-        self.master = master
-        self.master.title("Joystick")
+        self.master = master    # Når der er flere vinduer i en applikation skaber det et hieraki af vinduer (ligesom et folder tree (parent/child))
+                                # Her siger vi at vores joystick app skal startes som root vinduet, da det er det primære vindue.
 
-        self.canvas = tk.Canvas(self.master, width=1200, height=1200, bg="white")
-        self.canvas.pack()
+        self.master.title("Joystick")   # Sætter en header for vores app, kan ikke ses på mobil.
 
+        self.canvas = tk.Canvas(self.master, width=1200, height=1200, bg="white") # Bygger selve applikations vinduet
+        self.canvas.pack() # Packer selve vores GUI i vores root vindue. Uden denne vil vores root vindue være tomt og vi vil ikke kunne se vores GUI.
+
+        # Cirkel size parameters.
         self.radius = 450
         self.center_x = 600
         self.center_y = 600
 
-        # Draw the bounding box (circle)
+        # Tegner vores boundary cirkel der sætter en limit for hvor langt vores marker kan køres ud.
+        # Da vores cirkel coords bruger x og y koordinater, tilføjer vi vores radius til hvert aksel (x+, x-, y+, y-)
         self.canvas.create_oval(
             self.center_x - self.radius,
             self.center_y - self.radius,
@@ -28,12 +35,13 @@ class Joystick:
             outline="black"
         )
 
-        # Draw the coordinate system inside the circle
+        # Tegner vores kordinat lignende linjer i cirkelen.
         self.canvas.create_line(self.center_x, self.center_y - self.radius, self.center_x, self.center_y + self.radius, fill="black")  # Vertical line (Y-axis)
         self.canvas.create_line(self.center_x - self.radius, self.center_y, self.center_x + self.radius, self.center_y, fill="black")  # Horizontal line (X-axis)
 
-        # Draw the marker
+        # Tegner vores control marker
         self.marker_size = 30
+        # Følgende parameter gør vores marker til en cirkel.
         self.marker = self.canvas.create_oval(
             self.center_x - self.marker_size // 2,
             self.center_y - self.marker_size // 2,
@@ -42,23 +50,14 @@ class Joystick:
             fill="red"
         )
 
-        # Bind mouse events
+        # Kalder self.move_marker funktionen når vores marker er i bevægelse.
         self.canvas.bind("<B1-Motion>", self.move_marker)
+        # Kalder vores self.release funktion når vores marker er sluppet.
         self.canvas.bind("<ButtonRelease-1>", self.release)
 
-    def draw_marker(self, x, y, label):
-        # Draw a marker at the specified position with a label
-        marker_size = 15
-        self.canvas.create_oval(
-            x - marker_size,
-            y - marker_size,
-            x + marker_size,
-            y + marker_size,
-            fill="blue"
-        )
-        self.canvas.create_text(x, y - marker_size - 10, text=label, fill="blue")
-
+    # Marker release funktion.
     def release(self, event):
+        # Tager vores current x og y kordinator og sætter dem til x center og y center.
         global x_value, y_value
         rel_x = event.x
         rel_y = event.y
@@ -66,6 +65,7 @@ class Joystick:
         rel_x = self.center_x 
         rel_y = self.center_y
 
+        # Tegner vores marker igen, da den ikke opdaterer til center uden redrawing.
         self.canvas.coords(
             self.marker,
             rel_x - self.marker_size // 2,
@@ -74,17 +74,26 @@ class Joystick:
             rel_y + self.marker_size // 2
         )
 
+        # Kopieret fra vores move_marker funktion, bedre kode skik at ligge det i en funktion for sig selv istedet.
+        # Kan implementeres senere.
+
+        # Udregner vores marker position i vores koordinat system.
         self.polar_radius = math.sqrt((rel_x - self.center_x)**2 + (rel_y - self.center_y)**2)
         self.polar_angle = math.degrees(math.atan2(rel_y - self.center_y, rel_x - self.center_x))
         print(f"Marker position: ({self.polar_radius:.2f}, {self.polar_angle:.2f} degrees)")
+
+        # Runder vores float ned til en int.
         x_value = math.floor(self.polar_radius)
         y_value = math.floor(self.polar_angle)
+
+        # Kalder vores calculate funktion, sådan vi opdaterer vores UDP packet data med den nye marker position.
         calc = Calc()
         calc.calculate()
 
+    # Vores move_marker funktion. Virker meget ligesom vores release funktion, bare den ikke returnerer tilbage til x center og y center.
     def move_marker(self, event):
+        # Henter vores current marker position fra vores globale variabler.
         global x_value, y_value
-        # Calculate the new position based on mouse coordinates
         new_x = event.x
         new_y = event.y
 
@@ -92,11 +101,11 @@ class Joystick:
         angle = math.atan2(new_y - self.center_y, new_x - self.center_x)
         distance = min(self.radius, math.sqrt((new_x - self.center_x)**2 + (new_y - self.center_y)**2))
 
-        # Calculate new coordinates
-        new_x = self.center_x + distance * math.cos(angle)
-        new_y = self.center_y + distance * math.sin(angle)
+        # Calculater vores marker's position indenfor vores koordinat system.
+        new_x = self.center_x + distance * math.cos(angle)  # X akse
+        new_y = self.center_y + distance * math.sin(angle)  # Y akse
 
-        # Update the marker position
+        # Redrawer vores marker igen for at opdatere visuelt den nye position.
         self.canvas.coords(
             self.marker,
             new_x - self.marker_size // 2,
@@ -105,49 +114,40 @@ class Joystick:
             new_y + self.marker_size // 2
         )
 
-        # Print the polar coordinates
+        # Udregner vores marker position i vores koordinat system.
         self.polar_radius = math.sqrt((new_x - self.center_x)**2 + (new_y - self.center_y)**2)
         self.polar_angle = math.degrees(math.atan2(new_y - self.center_y, new_x - self.center_x))
         print(f"Marker position: ({self.polar_radius:.2f}, {self.polar_angle:.2f} degrees)")
         x_value = math.floor(self.polar_radius)
         y_value = math.floor(self.polar_angle)
+
+        # Opdaterer vores UDP packet med det nye marker position data.
         calc = Calc()
         calc.calculate()
 
 class Calc:
     def __init__(self):
-        """
-        Reference -
-            Speed -
-                UP: 200, 50
-                DOWN: 200, 350
-
-            Turn -
-                Left: 50, 200
-                Right: 350, 200
-
-                Top-left: 100, 100
-                Top-right: 300, 100
-                Bottom-left: 100, 300
-                Bottom-right: 300, 300
-        """
-
+        # Initialiser vores variabler
         self.X: int = x_value
         self.Y: int = y_value
 
     def calculate(self):
-        speed_factor: int = 145 # (2 x 436 = 65535 (mspeed) / 150 (max x value))      
+        speed_factor: int = 145 # (145 = 65535 (mspeed) / 450 (self.radius))      
         self.uspeed: int = 0
+
+        # Pluser vores speed factor til vores self.uspeed variabel for hvor langt vores marker er ude på x aksen.
         for i in range(self.X):
             self.uspeed += speed_factor
 
-        self.checkdir = -1 # 0 for forwards, 1 for backwards
+        self.checkdir = -1 # 0 for forwards, 1 for backwards. -1 = default value.
 
+        # Defaulter left motor (lm) og right motor (rm) speed variables til self.uspeed.
         self.lm_speed = self.uspeed
         self.rm_speed = self.uspeed
         
+        # Main control loop for UDP packet data crafting.
         if self.Y <= 0: # Forwards (if Y is negative)
-            self.checkdir = 0
+            self.checkdir = 0   # Forwards (marker in top half of circle)
             
             if self.Y < -90: # Top Left
                 print("Top Left")
@@ -162,7 +162,7 @@ class Calc:
                 print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
         
         elif self.Y > 0: # Backwards (if Y is positive)
-            self.checkdir = 1
+            self.checkdir = 1   # Backwards (marker in bottom half of circle)
             
             if self.Y > 90: # Bottom Left
                 print("Bottom Left")
@@ -174,19 +174,23 @@ class Calc:
                 self.rm_speed = max(0, int(self.uspeed * (1 - abs(self.Y - 90) / 90)))
                 print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
             else: 
+                # Else statement for security, som applikationen er bygget vil dette aldrig blive eksekveret.
                 print(f"left motor: {self.lm_speed}, right motor: {self.rm_speed}")
         
+        # Kalder vores UDP packet crafter funktion med vores variabler.
         self.craft_data()
 
+    # Craft vores UDP packet vi sender til vores server.
     def craft_data(self):
         global data
          # craft data from calculations.
         data = {
-            'check.direction': self.checkdir,
-            'lm': self.lm_speed,
-            'rm': self.rm_speed,
+            'check.direction': self.checkdir,  # direction variabel, forwards (activate M2) eller backwards (activate M1)
+            'lm': self.lm_speed,    # Left motor speed
+            'rm': self.rm_speed,    # Right motor speed
         }
 
+# UDP socket class
 class UdpSocket:
     def __init__(self):
         #Intialize the UDP socket
