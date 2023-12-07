@@ -2,12 +2,13 @@ from machine import Pin, PWM
 from time import sleep
 import uasyncio as asyncio
 import sys, select, socket, struct
+import ujson as json 
 import ConnectHandler
 
 class DrvHandler:
     def __init__(self) -> None:
-        self.pwm1 = PWM(Pin(14, Pin.OUT), freq=2000, duty_ns= 0) # Left Moter
-        self.pwm2 = PWM(Pin(15, Pin.OUT), freq=2000, duty_ns= 0) # Right Motor
+        self.pwm1 = PWM(Pin(14, Pin.OUT), freq=100, duty_ns= 0) # Left Moter
+        self.pwm2 = PWM(Pin(15, Pin.OUT), freq=100, duty_ns= 0) # Right Motor
         self.dir_M1 = Pin(16, Pin.OUT)  # Backwards
         self.dir_M2 = Pin(13, Pin.OUT)  # Forwards
 
@@ -16,7 +17,7 @@ class DrvHandler:
 
     def control_drv(self, duty_lm: int = 0, duty_rm: int = 0, direction: bool = -1):
         # Forwards
-        if not direction and duty_lm <= self.mspeed and duty_rm <= self.mspeed:
+        if direction == 0 and duty_lm <= self.mspeed and duty_rm <= self.mspeed:
             self.dir_M1.value(self.drv)     # 0 (False) / Backwards
             self.dir_M2.value(not self.drv) # 1 (True) / Forwards
             
@@ -32,6 +33,7 @@ class DrvHandler:
             self.pwm2.duty_u16(duty_rm)
            
         else:
+            sys.stdout.write('[!] Invalid parameters, motors are turned off.')
             self.pwm1.duty_u16(0)
             self.pwm2.duty_u16(0)
 
@@ -68,25 +70,18 @@ class InHandler:
         while True:
             #modtager data fra klienten (fjernbetjeningen) dekoder det fra bytes til streng
             creqctrl = self.ssocket.recv(1024)
-            creqctrl = self.remaining_data + creqctrl
             
-            while len(creqctrl) >= struct.calcsize('!IHI'):
+            print(creqctrl)
             
-                unpacked = struct.unpack('!IHI', creqctrl[:struct.calcsize('!IHI')])
-                                
-                keys = ['check.direction', 'lm', 'rm']
-                
-                reqdict = dict(zip(keys, unpacked))
-                
-                direction = reqdict.get('check.direction')
-                lm_val = reqdict.get('lm')
-                rm_val = reqdict.get('rm')
-                
-                print(f"Direction: {direction}, LM: {lm_val}, RM: {rm_val}")
-                
-                self.control_handler.control_drv(lm_val, rm_val, direction)
+            unpacked = json.loads(creqctrl.decode('utf-8'))
             
-                creqctrl = creqctrl[struct.calcsize('!IHI'):]
+            direction: bool = unpacked.get('check.direction')
+            lm_val: int = unpacked.get('lm')
+            rm_val: int = unpacked.get('rm')
+            
+            print(f"Direction: {direction}, LM: {lm_val}, RM: {rm_val}")
+            
+            self.control_handler.control_drv(lm_val, rm_val, direction)
             
             self.remaining_data = creqctrl
             sleep(0.05)

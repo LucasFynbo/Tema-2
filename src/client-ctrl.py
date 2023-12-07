@@ -22,8 +22,8 @@ class Joystick:
 
         # Cirkel size parameters.
         self.radius = 450
-        self.center_x = 1200
-        self.center_y = 1200
+        self.center_x = 550
+        self.center_y = 1050
 
         # Tegner vores boundary cirkel der sætter en limit for hvor langt vores marker kan køres ud.
         # Da vores cirkel coords bruger x og y koordinater, tilføjer vi vores radius til hvert aksel (x+, x-, y+, y-)
