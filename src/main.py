@@ -44,19 +44,17 @@ class DrvHandler:
 
 class InHandler:
     def __init__(self) -> None:
-        host: str = ConnectHandler.getip('fedora', '12345678')
-        port: int = 7913
-        self.ssocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        host: str = ConnectHandler.getip('fedora', '12345678')#SSID PASSWD
+        port: int = 7913 #hvad port der brugres
+        self.ssocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #opretter UDP ved hjælp af Pythons standart bib
         
         try:
-            self.ssocket.bind((host,port))
-            sys.stdout.write('Listeng on %s:%d' % (host, port))
+            self.ssocket.bind((host,port)) #binder socket til SSIG og port 
+            sys.stdout.write('Listeng on %s:%d' % (host, port))#lytter på SSID og port
         except OSError as e:
-            if e.errno == errno.EADDRINUSE:
+            if e.errno == errno.EADDRINUSE: #opfanger fejl i forsøget til at forbinde socket og tildeles variablen "e"
                 sys.stdout.write('[i] Address is already in use. Waiting for it to be released...')
-                
-                # Enabler vores socket til at bruge den samme adresse, så den "ignorerer" vores EADDRINUSE error.
-                self.ssocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                self.ssocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)# Enabler vores socket til at bruge den samme adresse, så den "ignorerer" vores EADDRINUSE error.
                 self.ssocket.bind((host, port))  # Prøver at binde igen på den genbrugte adresse.
                 sys.stdout.write('[i] Listeng on %s:%d' % (host, port))
             else:
@@ -69,24 +67,24 @@ class InHandler:
     async def remote_control_server(self) -> None:
         while True:
             #modtager data fra klienten (fjernbetjeningen) dekoder det fra bytes til streng
-            creqctrl = self.ssocket.recv(1024)
+            creqctrl = self.ssocket.recv(1024) #kan modtage op til 1024 bytes af gangen
             
             print(creqctrl)
             
-            unpacked = json.loads(creqctrl.decode('utf-8'))
+            unpacked = json.loads(creqctrl.decode('utf-8'))#laves fra bytes til steng og indlæses som json data
             
-            direction: bool = unpacked.get('check.direction')
+            direction: bool = unpacked.get('check.direction')#ser efter retning på motor
             lm_val: int = unpacked.get('lm')
             rm_val: int = unpacked.get('rm')
             
             print(f"Direction: {direction}, LM: {lm_val}, RM: {rm_val}")
             
-            self.control_handler.control_drv(lm_val, rm_val, direction)
+            self.control_handler.control_drv(lm_val, rm_val, direction) #styre enhed baseret på modtagende data
             
-            self.remaining_data = creqctrl
-            sleep(0.05)
+            self.remaining_data = creqctrl #opdatere med modtagende data
+            sleep(0.05) #tilføjer en kort pause 
             
-    def close_socket(self):
+    def close_socket(self): #lukker forbindelsen kort
         self.ssocket.close()
         
 async def main():
