@@ -204,7 +204,7 @@ class UdpSocket:
     def send_data(self):
         global data
         #forbereder data der skal sendes over UDP
-        packed_data = json.dumps(data) # pak dataen ved hjælp af msgpack for effektiv konventering til sekvens format
+        packed_data = json.dumps(data) #konventere en json-streng til bytes før den sendes
         self.csocket.sendto(packed_data.encode('utf-8'), self.ssocket_addr) # sender pakken af data via UDP
 
 if __name__ == "__main__":
