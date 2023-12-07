@@ -17,13 +17,13 @@ class Joystick:
 
         self.master.title("Joystick")   # Sætter en header for vores app, kan ikke ses på mobil.
 
-        self.canvas = tk.Canvas(self.master, width=1200, height=1200, bg="white") # Bygger selve applikations vinduet
+        self.canvas = tk.Canvas(self.master, width=1080, height=2400, bg="white") # Bygger selve applikations vinduet
         self.canvas.pack() # Packer selve vores GUI i vores root vindue. Uden denne vil vores root vindue være tomt og vi vil ikke kunne se vores GUI.
 
         # Cirkel size parameters.
         self.radius = 450
-        self.center_x = 600
-        self.center_y = 600
+        self.center_x = 1200
+        self.center_y = 1200
 
         # Tegner vores boundary cirkel der sætter en limit for hvor langt vores marker kan køres ud.
         # Da vores cirkel coords bruger x og y koordinater, tilføjer vi vores radius til hvert aksel (x+, x-, y+, y-)
